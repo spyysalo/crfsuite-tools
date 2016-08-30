@@ -1,0 +1,12 @@
+BioNLP Shared Task 2009 corpus Protein annotations.
+
+Original data: http://www.nactem.ac.uk/tsujii/GENIA/SharedTask/
+
+Conversion: https://github.com/spyysalo/standoff2conll
+
+Split: original.
+- train: BioNLP-ST_2009_training_data
+- devel: BioNLP-ST_2009_development_data
+- test : BioNLP-ST_2009_test_data
+
+NOTE: only physical entity annotations (Protein) are included.
