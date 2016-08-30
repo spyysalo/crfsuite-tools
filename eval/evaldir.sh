@@ -1,21 +1,18 @@
 #!/bin/bash
 
-USAGE="Usage: $0 [-p] [DATADIR [FEATURIZER]]"
+USAGE="Usage: $0 [-p] [-t] [DATADIR [FEATURIZER]]"
 
 # defaults
 datadir="data/all"
 featurizer="featurize/ner.py"
 parallel=false
+evaltest=false
 
-while getopts 'p' opt; do
+while getopts 'pt' opt; do
     case "$opt" in
-	p)
-	    parallel=true
-	    ;;
-	\?)
-	    echo "$USAGE" >&2
-	    exit
-	    ;;
+	'p') parallel=true ;;
+	't') evaltest=true ;;
+	'?') echo "$USAGE" >&2; exit ;;
     esac
 done
 shift $((OPTIND - 1));
@@ -32,11 +29,16 @@ featurizer=${2:-"$featurizer"}
 scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 runeval="$scriptdir/runeval.sh"
 
+params=""
+if [ "$evaltest" = true ]; then
+    params="-t"
+fi
+
 for d in "$datadir"/*; do
     if [ "$parallel" = true ]; then
-	"$runeval" "$d" "$featurizer"&
+	"$runeval" $params "$d" "$featurizer"&
     else
-	"$runeval" "$d" "$featurizer"
+	"$runeval" $params "$d" "$featurizer"
     fi
 done
 
