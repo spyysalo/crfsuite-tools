@@ -5,14 +5,15 @@
 set -e
 set -u
 
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 DATADIR FEATURIZER" >&2
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 DATADIR FEATURIZER [LEARN-OPTIONS]" >&2
     echo "    example: $0 example-data/bionlp-st-2009 featurize/ner.py" >&2
     exit
 fi
 
 datadir="$1"
 featurizer="$2"
+shift 2
 
 # http://stackoverflow.com/a/246128
 scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -33,7 +34,7 @@ cat "$datadir/devel.tsv" | "$featurizer" > "$workdir/devel.crfsuite.txt"
 cat "$datadir/test.tsv" | "$featurizer" > "$workdir/test.crfsuite.txt"
 
 modelfile="$workdir"/$(basename "$datadir").model
-crfsuite learn -m "$modelfile" -e2 \
+crfsuite learn -m "$modelfile" -e2 "$@" \
  	 "$workdir/train.crfsuite.txt" \
 	 "$workdir/devel.crfsuite.txt" \
 	 > "$logfile"
