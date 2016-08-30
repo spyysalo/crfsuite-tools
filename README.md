@@ -41,10 +41,10 @@ CRFsuite must be found in $PATH:
 
 (Progress is logged into a file in logs/)
 
-### Run evaluation on all datasets
+### Run evaluation on NER datasets
 
-    ./evalall.sh
+    ./evalner.sh
 
-### Run evaluation on all datasets in parallel
+### Run evaluation on NER datasets in parallel
 
-    ./evalall.sh -p
+    ./evalner.sh -p
