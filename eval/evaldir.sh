@@ -7,10 +7,12 @@ datadir="data/all"
 featurizer="featurize/ner.py"
 parallel=false
 evaltest=false
+selected=""
 
-while getopts 'pt' opt; do
+while getopts 'pts:' opt; do
     case "$opt" in
 	'p') parallel=true ;;
+	's') selected="$OPTARG" ;;
 	't') evaltest=true ;;
 	'?') echo "$USAGE" >&2; exit ;;
     esac
@@ -34,11 +36,23 @@ if [ "$evaltest" = true ]; then
     params="-t"
 fi
 
-for d in "$datadir"/*; do
-    if [ "$parallel" = true ]; then
-	"$runeval" $params "$d" "$featurizer"&
+if [ ! "$selected" ]; then
+    datadirs="$datadir"/*
+else
+    datadirs=$(cut -f 1 "$selected")
+fi
+
+for d in $datadirs; do
+    if [ ! "$selected" ]; then
+	p=""
     else
-	"$runeval" $params "$d" "$featurizer"
+	p="-p "$(egrep '^'"$d"$'\t' "$selected" | cut -f 2 | head -n 1)
+	d="$datadir/$d"
+    fi
+    if [ "$parallel" = true ]; then
+	"$runeval" $params $p "$d" "$featurizer"&
+    else
+	"$runeval" $params $p "$d" "$featurizer"
     fi
 done
 

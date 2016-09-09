@@ -14,13 +14,24 @@ fi
 # separate own options from options to crfsuite learn
 evaltest=false
 learnargs=""
+isvalue=false
 for arg in "$@"; do
     if [[ "$arg" == -* ]]; then
 	if [ "$arg" = "-t" ]; then
 	    evaltest=true
+	    isvalue=false
 	else
 	    learnargs="$learnargs $arg"
+	    if [[ "$arg" =~ ^-(a|p|m|g|e|L)$ ]]; then
+		isvalue=true    # next is value, include in learnargs
+	    else
+		isvalue=false
+	    fi
 	fi
+	shift
+    elif [ "$isvalue" = true ]; then
+	learnargs="$learnargs $arg"
+	isvalue=false
 	shift
     else
 	break

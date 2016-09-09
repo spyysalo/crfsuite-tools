@@ -52,3 +52,15 @@ CRFsuite must be found in $PATH:
 ### Run test set evaluation on NER datasets in parallel
 
     ./evalner.sh -t -p
+
+### Run NER devel set eval with various c2 values
+
+    ./evalnerc2.sh > nerc2-results.txt
+
+Select best c2 value for each dataset
+
+    ./bestnerc2.sh nerc2-results.txt > ner-parameters.txt
+
+### Run NER test set eval with selected parameters in parallel
+
+    ./evalner.sh -s ner-parameters.txt -t -p
