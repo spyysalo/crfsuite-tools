@@ -1,71 +1,82 @@
 #!/bin/bash
 
-# Run evaluation on all subdirectories of given directory.
+# Train and evaluate CRFsuite tagger on given dataset and featurizer.
 
 set -e
 set -u
 
-USAGE="Usage: $0 [-p] [-t] [-s params] [DATADIR [FEATURIZER]]"
-
-# defaults
-datadir="data/all"
-featurizer="featurize/ner.py"
-parallel=false
-evaltest=false
-selected=""
-
-while getopts 'pts:' opt; do
-    case "$opt" in
-	'p') parallel=true ;;
-	's') selected="$OPTARG" ;;
-	't') evaltest=true ;;
-	'?') echo "$USAGE" >&2; exit ;;
-    esac
-done
-shift $((OPTIND - 1));
-
-if [ "$#" -gt 2 ]; then
-    echo "$USAGE" >&2
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0  [-t] [LEARN-OPTIONS] DATADIR FEATURIZER" >&2
+    echo "    example: $0 example-data/bionlp-st-2009 featurize/ner.py" >&2
     exit
 fi
 
-datadir=${1:-"$datadir"}
-featurizer=${2:-"$featurizer"}
-
-# http://stackoverflow.com/a/246128
-scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-runeval="$scriptdir/runeval.sh"
-
-params=""
-if [ "$evaltest" = true ]; then
-    params="-t"
-fi
-
-if [ ! "$selected" ]; then
-    datadirs=$(find "$datadir"/* -maxdepth 0 -type d -or -type l)
-    if [ ! "$datadirs" ]; then
-	echo "No data directories in $datadir" >&2
-	exit 1
-    fi
-else
-    datadirs=$(cut -f 1 "$selected")
-fi
-
-echo "$0: datadirs: $datadirs" >&2
-
-for d in $datadirs; do
-    if [ ! "$selected" ]; then
-	p=""
+# separate own options from options to crfsuite learn
+evaltest=false
+learnargs=""
+isvalue=false
+for arg in "$@"; do
+    if [[ "$arg" == -* ]]; then
+	if [ "$arg" = "-t" ]; then
+	    evaltest=true
+	    isvalue=false
+	else
+	    learnargs="$learnargs $arg"
+	    if [[ "$arg" =~ ^-(a|p|m|g|e|L)$ ]]; then
+		isvalue=true    # next is value, include in learnargs
+	    else
+		isvalue=false
+	    fi
+	fi
+	shift
+    elif [ "$isvalue" = true ]; then
+	learnargs="$learnargs $arg"
+	isvalue=false
+	shift
     else
-	p="-p "$(egrep '^'"$d"$'\t' "$selected" | cut -f 2 | head -n 1)
-	d="$datadir/$d"
-    fi
-    echo "$0 running $runeval $params $p $d" >&2
-    if [ "$parallel" = true ]; then
-	"$runeval" $params $p "$d" "$featurizer"&
-    else
-	"$runeval" $params $p "$d" "$featurizer"
+	break
     fi
 done
 
-wait
+datadir="$1"
+featurizer="$2"
+
+# http://stackoverflow.com/a/246128
+scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+logdir="$scriptdir/../logs"
+mkdir -p "$logdir"
+logfile="$logdir/"$(date +"%Y-%m-%d--%H-%M-%S")"--"$(basename "$0" ".sh")"--"$(basename "$datadir")"--"$(basename $(echo "$featurizer" | perl -pe 's/ .*//') ".py")".log"
+
+workdir=$(mktemp -d)
+function onexit {
+    # echo "Removing $workdir ..."
+    rm -rf "$workdir"
+}
+trap onexit EXIT
+
+if [ "$evaltest" = true ]; then
+    testdata="$datadir/test.tsv"
+else
+    testdata="$datadir/devel.tsv"    # devel only
+fi
+
+cat "$datadir/train.tsv" | $featurizer > "$workdir/train.crfsuite.txt"
+cat "$datadir/devel.tsv" | $featurizer > "$workdir/devel.crfsuite.txt"
+cat "$testdata" | $featurizer > "$workdir/test.crfsuite.txt"
+
+modelfile="$workdir"/$(basename "$datadir").model
+crfsuite learn -m "$modelfile" -e2 $learnargs \
+ 	 "$workdir/train.crfsuite.txt" \
+	 "$workdir/devel.crfsuite.txt" \
+	 > "$logfile"
+crfsuite tag -m "$modelfile" "$workdir/test.crfsuite.txt" \
+	 > "$workdir/test.tags"
+
+# Colons in labels escaped for CRFsuite, unescape here.
+perl -p -i -e 's/__COLON__/:/g' "$workdir/test.tags"
+
+python "$scriptdir/mergetags.py" "$testdata" "$workdir/test.tags" \
+       > "$workdir/test.merged"
+"$scriptdir/conlleval.pl" < "$workdir/test.merged" \
+    | perl -pe 's/^/'$(basename "$datadir")':\t/'
