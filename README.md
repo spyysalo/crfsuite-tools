@@ -64,3 +64,12 @@ Select best c2 value for each dataset
 ### Run NER test set eval with selected parameters in parallel
 
     ./evalner.sh -s ner-parameters.txt -t -p
+
+### Run evaluation with word vector features and window 0
+
+    ./evalwv.sh wv.bin 0
+
+Word vectors should be in a wvlib-compatible format. The window
+parameter gives the number of additional words on each side of the
+context word to include, so that e.g. window 1 includes three words in
+total.
