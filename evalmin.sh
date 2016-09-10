@@ -8,4 +8,4 @@ basedir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 datadir="$basedir/data/all"
 featurizer="$basedir/featurize/minimal.py"
 
-"$basedir/eval/evaldir.sh" "$@" "$datadir" "$featurizer"
+"$basedir/eval/evaldirs.sh" "$@" "$datadir" "$featurizer"

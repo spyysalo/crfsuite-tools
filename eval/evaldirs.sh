@@ -34,7 +34,7 @@ featurizer=${2:-"$featurizer"}
 
 # http://stackoverflow.com/a/246128
 scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-runeval="$scriptdir/runeval.sh"
+runeval="$scriptdir/evaldir.sh"
 
 params=""
 if [ "$evaltest" = true ]; then
