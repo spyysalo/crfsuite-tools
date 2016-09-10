@@ -46,7 +46,7 @@ scriptdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 logdir="$scriptdir/../logs"
 mkdir -p "$logdir"
-logfile="$logdir/"$(date +"%Y-%m-%d--%H-%M-%S")"--"$(basename "$0" ".sh")"--"$(basename "$datadir")"--"$(basename "$featurizer" ".py")".log"
+logfile="$logdir/"$(date +"%Y-%m-%d--%H-%M-%S")"--"$(basename "$0" ".sh")"--"$(basename "$datadir")"--"$(basename $(echo "$featurizer" | perl -pe 's/ .*//') ".py")".log"
 
 workdir=$(mktemp -d)
 function onexit {
@@ -61,9 +61,9 @@ else
     testdata="$datadir/devel.tsv"    # devel only
 fi
 
-cat "$datadir/train.tsv" | "$featurizer" > "$workdir/train.crfsuite.txt"
-cat "$datadir/devel.tsv" | "$featurizer" > "$workdir/devel.crfsuite.txt"
-cat "$testdata" | "$featurizer" > "$workdir/test.crfsuite.txt"
+cat "$datadir/train.tsv" | $featurizer > "$workdir/train.crfsuite.txt"
+cat "$datadir/devel.tsv" | $featurizer > "$workdir/devel.crfsuite.txt"
+cat "$testdata" | $featurizer > "$workdir/test.crfsuite.txt"
 
 modelfile="$workdir"/$(basename "$datadir").model
 crfsuite learn -m "$modelfile" -e2 $learnargs \

@@ -1,6 +1,11 @@
 #!/bin/bash
 
-USAGE="Usage: $0 [-p] [-t] [DATADIR [FEATURIZER]]"
+# Run evaluation on all subdirectories of given directory.
+
+set -e
+set -u
+
+USAGE="Usage: $0 [-p] [-t] [-s params] [DATADIR [FEATURIZER]]"
 
 # defaults
 datadir="data/all"
@@ -37,10 +42,16 @@ if [ "$evaltest" = true ]; then
 fi
 
 if [ ! "$selected" ]; then
-    datadirs="$datadir"/*
+    datadirs=$(find "$datadir"/* -maxdepth 0 -type d -or -type l)
+    if [ ! "$datadirs" ]; then
+	echo "No data directories in $datadir" >&2
+	exit 1
+    fi
 else
     datadirs=$(cut -f 1 "$selected")
 fi
+
+echo "$0: datadirs: $datadirs" >&2
 
 for d in $datadirs; do
     if [ ! "$selected" ]; then
@@ -49,6 +60,7 @@ for d in $datadirs; do
 	p="-p "$(egrep '^'"$d"$'\t' "$selected" | cut -f 2 | head -n 1)
 	d="$datadir/$d"
     fi
+    echo "$0 running $runeval $params $p $d" >&2
     if [ "$parallel" = true ]; then
 	"$runeval" $params $p "$d" "$featurizer"&
     else
